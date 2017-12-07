@@ -63,9 +63,9 @@ public class BazaWiedzy {
     }
     
     public Set<String> wyszukajPizzePoDodatkach(String iri){
-    	Set<String> pizze = new HashSet<String>();
+    	Set<String> pizze = new HashSet<>();
     	OWLObjectProperty maDodatek = manager.getOWLDataFactory().getOWLObjectProperty(IRI.create("http://semantic.cs.put.poznan.pl/ontologie/pizza.owl#maDodatek"));
-    	Set<OWLClassExpression> ograniczeniaEgzystencjalne = new HashSet<OWLClassExpression>();
+    	Set<OWLClassExpression> ograniczeniaEgzystencjalne = new HashSet<>();
     	
     	OWLClass dodatek = manager.getOWLDataFactory().getOWLClass(IRI.create(iri));
     	OWLClassExpression wyrazenie = manager.getOWLDataFactory().getOWLObjectSomeValuesFrom(maDodatek, dodatek);

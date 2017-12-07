@@ -50,30 +50,29 @@ public class Parser {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		setSlowaKluczowe(parsuj(buffer.toString()));
+		setSlowaKluczowe(parsuj(buffer));
 	}
 
 	
 	public String[] parsuj (String wypowiedz) {
 		String[] slowa = wypowiedz.split(" ");
-		ArrayList<String> tokeny = new ArrayList<String>();
+		ArrayList<String> tokeny = new ArrayList<>();
 		
 		PolishStemmer s = new PolishStemmer();
 		
 		for (String slowo : slowa){ 
-			String token = new String("");
+			String token;
 			if (stem(s, slowo).length>1)
 				token = stem(s, slowo)[0];
 			else
 				token = slowo.toLowerCase();
 			tokeny.add(token);
 		}
-		
 	    return tokeny.toArray(new String[tokeny.size()]);
 	}
 	
 	public static String[] stem(IStemmer s, String slowo) {
-	    ArrayList<String> result = new ArrayList<String>();
+	    ArrayList<String> result = new ArrayList<>();
 	    for (WordData wd : s.lookup(slowo)) {
 	      result.add(wd.getStem().toString());
 	      result.add(wd.getTag().toString());
@@ -81,7 +80,7 @@ public class Parser {
 	    return result.toArray(new String[result.size()]);
 	  }
 	
-    public static final void main(String[] args) {
+    public static void main(String[] args) {
         try {
         	Parser p = new Parser();
         	p.parsuj("Chciałabym pizzę wegetariańską");

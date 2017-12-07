@@ -36,15 +36,19 @@ rule "Podaj dodatki"
 		  dodatek.setMonit("Jaki dodatek powinna zawierać Twoja pizza?:\n");
 		  dodatek.zadajPytanie();
 		  parser.przetworzOdpowiedz();
-		 
+		boolean found = false;
 		for (String slowo : parser.getSlowaKluczowe()){
-			for (String uriKlasy : baza.dopasujDodatek(slowo)) { 
+		    System.out.println("słowo " + slowo);
+			for (String uriKlasy : baza.dopasujDodatek(slowo)) {
+			    System.out.println("dopasowano :" + uriKlasy);
 		        insert(new Fakt("dodatek", uriKlasy));
-		    } 
+		        found = true;
+		    }
 		}
-		    		
-		//@TODO	brak dopasowania
-		update(dodatek);
+		if (!found) {
+		    insert(new Fakt("dodatek", null));
+		}
+        update(dodatek);
 end
 
 rule "Podaj rodzaj ciasta"
@@ -58,29 +62,32 @@ rule "Podaj rodzaj ciasta"
 		  ciasto.setMonit("Podaj rodzaj ciasta:\n");
 		  ciasto.zadajPytanie();
 		  parser.przetworzOdpowiedz();
-		 
+
+		boolean found = false;
 		for (String slowo : parser.getSlowaKluczowe()){
-			if (slowo.equals("cienki")){
-		       insert(new Fakt("rodzaj_ciasta", "cienkie"));
-			} else if (slowo.equals("gruby")) {
-		       insert(new Fakt("rodzaj_ciasta", "grube"));
+			if (slowo.matches("cienk[ei]")){
+			    found = true;
+		        insert(new Fakt("rodzaj_ciasta", "cienkie"));
+			} else if (slowo.matches("grub[ye]")) {
+			    found = true;
+		        insert(new Fakt("rodzaj_ciasta", "grube"));
 			}
 		}
-					
-		//@TODO	brak dopasowania
-		
-		update(ciasto);
+		if (!found) {
+            insert(new Fakt("rodzaj_ciasta", null));
+        }
+        update(ciasto);
 end
 
 rule "Polecana pizza"
 	salience 1
 	
 	when
-		Fakt(nazwa == "dodatek") && 
-		Fakt(nazwa == "rodzaj_ciasta") && 	
+		Fakt(nazwa == "dodatek", dodatek: wartosc) &&
+		Fakt(nazwa == "rodzaj_ciasta", ciasto: wartosc) &&
 		not Fakt(nazwa == "pizza_propozycja") &&
         $dodatek : Fakt( nazwa == "dodatek")
- 		
+ 		eval(dodatek != null && ciasto != null)
 		baza: BazaWiedzy()
 		pizza: Pizza()
 	then
@@ -99,6 +106,16 @@ rule "Polecana pizza"
 		else {
 			System.out.println(pizza.getBrakDopasowania());
 	    }
+
+end
+
+rule "not found"
+    when
+        Fakt(nazwa == "dodatek", dodatek: wartosc)
+        Fakt(nazwa == "rodzaj_ciasta", ciasto: wartosc)
+        eval(dodatek == null || ciasto == null)
+    then
+        System.out.println("Nie znaleziono takiej pizzy, ale wykonamy ją specjalnie dla Ciebie.");
 
 end
 
