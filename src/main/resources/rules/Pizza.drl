@@ -5,14 +5,12 @@ import pl.poznan.put.cs.si.puttalky.Zamowienie;
 import pl.poznan.put.cs.si.puttalky.Ciasto;
 import pl.poznan.put.cs.si.puttalky.Dodatek;
 import pl.poznan.put.cs.si.puttalky.BazaWiedzy;
-import java.util.Set;
+import java.util.Set
+import java.util.Arrays;
 
-
-/** Author: agalawrynowicz<br>
- * Date: 19-Dec-2016 */
 
 rule "start"
-	salience 3
+	salience 4
 	
 	when
 		not Fakt(nazwa=="start")
@@ -24,11 +22,30 @@ rule "start"
 		insert(new Fakt("start", "0"));
 end
 
+rule "zamowienie czy porada"
+    salience 2
+
+    when
+        not Fakt(nazwa == "dodatek")
+        not Fakt(nazwa == "ciasto")
+        not Fakt(nazwa == "wybor")
+        wybor: Wybor()
+        parser: Parser()
+    then
+        wybor.setMonit("Czy chciałbyś zamówić pizzę, czy potrzebujesz porady?");
+        wybor.zadajPytanie();
+        parser.przetworzOdpowiedz();
+        String res = wybor.parseAnswer(parser.getSlowaKluczowe());
+
+        insert(new Fakt("wybor", res));
+    end
+
 rule "Podaj dodatki"
 	salience 2
 	
 	when
 		not Fakt(nazwa == "dodatek")
+		Fakt(nazwa == "wybor", wartosc == Wybor.PORADA)
 		dodatek : Dodatek()
 		parser : Parser()
 		baza : BazaWiedzy()
@@ -56,6 +73,7 @@ rule "Podaj rodzaj ciasta"
 	
 	when
 		not Fakt(nazwa == "rodzaj_ciasta")
+		Fakt(nazwa == "wybor", wartosc == Wybor.PORADA)
 		ciasto : Ciasto()
 		parser : Parser()
 	then
@@ -83,11 +101,11 @@ rule "Polecana pizza"
 	salience 1
 	
 	when
-		Fakt(nazwa == "dodatek", dodatek: wartosc) &&
-		Fakt(nazwa == "rodzaj_ciasta", ciasto: wartosc) &&
-		not Fakt(nazwa == "pizza_propozycja") &&
+		Fakt(nazwa == "dodatek", dodatek: wartosc)
+		Fakt(nazwa == "rodzaj_ciasta", ciasto: wartosc)
+		not Fakt(nazwa == "pizza_propozycja")
+		Fakt(nazwa == "wybor", wartosc == Wybor.PORADA)
         $dodatek : Fakt( nazwa == "dodatek")
- 		eval(dodatek != null && ciasto != null)
 		baza: BazaWiedzy()
 		pizza: Pizza()
 	then
@@ -97,7 +115,6 @@ rule "Polecana pizza"
         if (pizze.size()>1){            		
 			for (String nazwaPizzy : pizze) {
 				insert(new Fakt("pizza_propozycja", nazwaPizzy));
-		    	//System.out.println();
 		    	if (!nazwaPizzy.equals("Nothing")){
 		       	   System.out.println("Polecam pizzę:"+nazwaPizzy);
 		       	}
@@ -109,13 +126,21 @@ rule "Polecana pizza"
 
 end
 
-rule "not found"
+rule "Wybierz pizze"
+    when
+        Fakt(nazwa == "wybor", wartosc == Wybor.ZAMOWIENIE)
+    then
+
+    end
+
+rule "Zamowienie pizzy"
     when
         Fakt(nazwa == "dodatek", dodatek: wartosc)
         Fakt(nazwa == "rodzaj_ciasta", ciasto: wartosc)
-        eval(dodatek == null || ciasto == null)
+        Fakt(nazwa == "wybor", wartosc == Wybor.ZAMOWIENIE)
+//        eval(dodatek == null || ciasto == null)
     then
-        System.out.println("Nie znaleziono takiej pizzy, ale wykonamy ją specjalnie dla Ciebie.");
+        System.out.println("pizza gna i leci");
 
 end
 
@@ -123,7 +148,7 @@ end
 rule "zakończenie"
 
 	when
-		not (Fakt(nazwa == "koniec")) &&
+		not (Fakt(nazwa == "koniec"))
 		Fakt(nazwa == "pizza_propozycja") 
 
 		zamowienie : Zamowienie()
