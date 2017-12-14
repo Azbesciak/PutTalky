@@ -52,7 +52,6 @@ public abstract class Formatka {
 		this.brakWypowiedzi = brakWypowiedzi;
 	}
 	
-	public void zadajPytanie() {
-	}
+	public void zadajPytanie() {}
 
 }
