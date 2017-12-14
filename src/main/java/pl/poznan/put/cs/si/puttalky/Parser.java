@@ -55,7 +55,7 @@ public class Parser {
 
 	
 	public String[] parsuj (String wypowiedz) {
-		String[] slowa = wypowiedz.split(" ");
+		String[] slowa = wypowiedz.split("\\s");
 		ArrayList<String> tokeny = new ArrayList<>();
 		
 		PolishStemmer s = new PolishStemmer();
