@@ -8,9 +8,6 @@ import pl.poznan.put.cs.si.puttalky.BazaWiedzy;
 import java.util.Set;
 
 
-/** Author: agalawrynowicz<br>
- * Date: 19-Dec-2016 */
-
 rule "start"
 	salience 3
 	
@@ -36,17 +33,12 @@ rule "Podaj dodatki"
 		  dodatek.setMonit("Jaki dodatek powinna zawierać Twoja pizza?:\n");
 		  dodatek.zadajPytanie();
 		  parser.przetworzOdpowiedz();
-		boolean found = false;
 		for (String slowo : parser.getSlowaKluczowe()){
 		    System.out.println("słowo " + slowo);
 			for (String uriKlasy : baza.dopasujDodatek(slowo)) {
 			    System.out.println("dopasowano :" + uriKlasy);
 		        insert(new Fakt("dodatek", uriKlasy));
-		        found = true;
 		    }
-		}
-		if (!found) {
-		    insert(new Fakt("dodatek", null));
 		}
         update(dodatek);
 end
@@ -63,19 +55,13 @@ rule "Podaj rodzaj ciasta"
 		  ciasto.zadajPytanie();
 		  parser.przetworzOdpowiedz();
 
-		boolean found = false;
 		for (String slowo : parser.getSlowaKluczowe()){
 			if (slowo.matches("cienk[ei]")){
-			    found = true;
 		        insert(new Fakt("rodzaj_ciasta", "cienkie"));
 			} else if (slowo.matches("grub[ye]")) {
-			    found = true;
 		        insert(new Fakt("rodzaj_ciasta", "grube"));
 			}
 		}
-		if (!found) {
-            insert(new Fakt("rodzaj_ciasta", null));
-        }
         update(ciasto);
 end
 
@@ -83,42 +69,34 @@ rule "Polecana pizza"
 	salience 1
 	
 	when
-		Fakt(nazwa == "dodatek", dodatek: wartosc) &&
-		Fakt(nazwa == "rodzaj_ciasta", ciasto: wartosc) &&
-		not Fakt(nazwa == "pizza_propozycja") &&
-        $dodatek : Fakt( nazwa == "dodatek")
- 		eval(dodatek != null && ciasto != null)
+		Fakt(nazwa == "dodatek", dodatek: wartosc)
+		Fakt(nazwa == "rodzaj_ciasta", ciasto: wartosc)
+		not Fakt(nazwa == "pizza_propozycja")
 		baza: BazaWiedzy()
 		pizza: Pizza()
 	then
-
-		Set<String> pizze = baza.wyszukajPizzePoDodatkach($dodatek.getWartosc());
-            
-        if (pizze.size()>1){            		
+		Set<String> pizze = baza.wyszukajPizzePoDodatkach(dodatek);
+        if (pizze.size()>1){
 			for (String nazwaPizzy : pizze) {
 				insert(new Fakt("pizza_propozycja", nazwaPizzy));
-		    	//System.out.println();
 		    	if (!nazwaPizzy.equals("Nothing")){
 		       	   System.out.println("Polecam pizzę:"+nazwaPizzy);
 		       	}
 		    }
 		}
 		else {
-			System.out.println(pizza.getBrakDopasowania());
+            Set<String> dodatki = baza.getMatchingExtrasNames(dodatek);
+            if (dodatki.isEmpty()) {
+                System.out.println("Nie mamy takiego dodatku");
+            } else {
+                System.out.println("Nie mamy pizzy zawierającej `" +
+                    dodatki.iterator().next() +
+                    "` jednak możemy ją wykonać na specjalne zamówienie"
+                );
+            }
 	    }
 
 end
-
-rule "not found"
-    when
-        Fakt(nazwa == "dodatek", dodatek: wartosc)
-        Fakt(nazwa == "rodzaj_ciasta", ciasto: wartosc)
-        eval(dodatek == null || ciasto == null)
-    then
-        System.out.println("Nie znaleziono takiej pizzy, ale wykonamy ją specjalnie dla Ciebie.");
-
-end
-
 
 rule "zakończenie"
 
