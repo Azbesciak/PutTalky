@@ -4,6 +4,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
+
 import morfologik.stemming.IStemmer;
 import morfologik.stemming.WordData;
 import morfologik.stemming.polish.PolishStemmer;
@@ -83,8 +85,9 @@ public class Parser {
     public static void main(String[] args) {
         try {
         	Parser p = new Parser();
-        	p.parsuj("Chciałabym pizzę wegetariańską");
-        
+            final String[] parsed = p.parsuj("Chciałabym pizzę wegetariańską");
+            System.out.println(Arrays.toString(parsed));
+
         } catch (Throwable t) {
             t.printStackTrace();
         }

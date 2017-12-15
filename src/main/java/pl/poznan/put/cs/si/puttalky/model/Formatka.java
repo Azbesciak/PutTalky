@@ -1,4 +1,4 @@
-package pl.poznan.put.cs.si.puttalky;
+package pl.poznan.put.cs.si.puttalky.model;
 
 /** Author: agalawrynowicz<br>
  * Date: 19-Dec-2016 */

@@ -1,4 +1,4 @@
-package pl.poznan.put.cs.si.puttalky;
+package pl.poznan.put.cs.si.puttalky.model;
 
 import java.util.Arrays;
 import java.util.function.Predicate;
