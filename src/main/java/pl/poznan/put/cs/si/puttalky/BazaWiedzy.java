@@ -11,9 +11,8 @@ import pl.poznan.put.cs.si.puttalky.model.Pizza;
 
 import java.io.InputStream;
 import java.util.*;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static java.util.Arrays.*;
@@ -165,17 +164,9 @@ public class BazaWiedzy {
 
     public Set<String> lookForMatching(String[] keys) {
         final Set<OwlClassContainer> classes = mapClassesToContainers(listaPizz);
-        return stream(keys)
-                .map(s -> lookForMatchingPizzas(classes, s))
-                .filter(s -> !s.isEmpty())
-                .reduce((a,b) -> {a.retainAll(b); return a;})
-                .orElse(emptySet())
-                .stream()
-                .flatMap(s -> concat(getSubClasses(s.name).stream(), of(s.clas)))
-                .map(this::create)
-                .map(s -> s.name)
-                .filter(Pizza::isPizza)
-                .collect(toSet());
+        final Set<OwlClassContainer> possibleOptions =
+                getPizzasWhichContainsAtLeastPartOfKeyWords(keys, classes);
+        return getFirstHierarchySubClassesAndThisOne(possibleOptions);
     }
 
     private Set<OwlClassContainer> mapClassesToContainers(Set<OWLClass> classes) {
@@ -185,30 +176,32 @@ public class BazaWiedzy {
                 .collect(toSet());
     }
 
+    private Set<OwlClassContainer> getPizzasWhichContainsAtLeastPartOfKeyWords(
+            String[] keyWords, Set<OwlClassContainer> classes) {
+        return stream(keyWords)
+                .map(s -> lookForMatchingPizzas(classes, s))
+                .filter(s -> !s.isEmpty())
+                .reduce(toIntersectionOfAll())
+                .orElse(emptySet());
+    }
+
     private Set<OwlClassContainer> lookForMatchingPizzas(Set<OwlClassContainer> classes, String s) {
         return classes.stream()
                 .filter(c -> !match(c.words, s, x -> x).isEmpty())
                 .collect(toSet());
     }
+    private BinaryOperator<Set<OwlClassContainer>> toIntersectionOfAll() {
+        return (a,b) -> {a.retainAll(b); return a;};
+    }
 
-    public Set<String> lookForPizzaByName(Set<String> pizzaWords) {
-        Set<String> pizze = new HashSet<>();
-        final OWLDataFactory factory = manager.getOWLDataFactory();
-        OWLObjectProperty pizzaOWL = factory
-                .getOWLObjectProperty(getIri("Pizza"));
-        Set<OWLClassExpression> ograniczeniaEgzystencjalne =
-                pizzaWords.stream()
-                        .map(iri -> factory.getOWLClass(IRI.create(iri)))
-                        .map(p -> factory.getOWLObjectSomeValuesFrom(pizzaOWL, p))
-                        .collect(toSet());
-
-        OWLClassExpression pozadanaPizza = factory.getOWLObjectIntersectionOf(ograniczeniaEgzystencjalne);
-
-        for (org.semanticweb.owlapi.reasoner.Node<OWLClass> klasa : silnik.getSubClasses(pozadanaPizza, false)) {
-            pizze.add(klasa.getEntities().iterator().next().asOWLClass().getIRI().getFragment());
-        }
-
-        return pizze;
+    private Set<String> getFirstHierarchySubClassesAndThisOne(Set<OwlClassContainer> possibleOptions) {
+        return possibleOptions
+                .stream()
+                .flatMap(s -> concat(getSubClasses(s.name).stream(), of(s.clas)))
+                .map(this::create)
+                .map(s -> s.name)
+                .filter(Pizza::isPizza)
+                .collect(toSet());
     }
 
     public Set<String> wyszukajPizzePoDodatkach(String iri) {
