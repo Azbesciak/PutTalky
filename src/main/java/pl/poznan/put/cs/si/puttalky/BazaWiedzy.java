@@ -62,13 +62,11 @@ public class BazaWiedzy {
 
         @Override
         public int hashCode() {
-
             return Objects.hash(clas, words, name);
         }
 
         OwlClassContainer(OWLClass clas, Set<String> words, String name) {
             this.clas = clas;
-
             this.name = name;
             this.words = words;
         }
@@ -76,9 +74,10 @@ public class BazaWiedzy {
 
     private OwlClassContainer create(OWLClass clas) {
         String name = parseName(clas);
-        Set<String> normalizedNames = name != null
-                ? new HashSet<>(asList(getNameKeyWords(name)))
-                : emptySet();
+        Set<String> normalizedNames =
+                name != null
+                    ? new HashSet<>(asList(getNameKeyWords(name)))
+                    : emptySet();
         return new OwlClassContainer(clas, normalizedNames, name);
     }
 
