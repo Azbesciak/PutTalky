@@ -4,7 +4,6 @@ package pl.poznan.put.cs.si.puttalky.model;
  * Date: 19-Dec-2016 */
 
 public class Pizza extends Formatka {
-	
 	private String nazwa;
 	private String opis; 
 	
@@ -27,5 +26,8 @@ public class Pizza extends Formatka {
 		return this.opis;
 	}
 	
+    public static boolean isPizza(String name) {
+	    return !"Nothing".equals(name);
+    }
 
 }

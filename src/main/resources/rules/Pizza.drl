@@ -3,7 +3,8 @@ package pl.poznan.put.cs.si.puttalky
 import pl.poznan.put.cs.si.puttalky.model.*;
 import pl.poznan.put.cs.si.puttalky.BazaWiedzy;
 import java.util.Set
-import java.util.Arrays;
+import java.util.Arrays
+import java.util.stream.Collectors;
 
 
 rule "start"
@@ -97,7 +98,7 @@ rule "Polecana pizza"
         if (pizze.size()>1){
 			for (String nazwaPizzy : pizze) {
 				insert(new Fakt("pizza_propozycja", nazwaPizzy));
-		    	if (!nazwaPizzy.equals("Nothing")){
+		    	if (Pizza.isPizza(nazwaPizzy)){
 		       	   System.out.println("Polecam pizzę:"+nazwaPizzy);
 		       	}
 		    }
@@ -114,6 +115,37 @@ rule "Polecana pizza"
             }
 	    }
 
+end
+
+
+rule "zloz zamowienie"
+	salience 2
+
+	when
+		not Fakt(nazwa == "dodatek")
+		Fakt(nazwa == "wybor", wartosc == Wybor.ZAMOWIENIE)
+		dodatek : Dodatek()
+		parser : Parser()
+		baza : BazaWiedzy()
+	then
+		  dodatek.setMonit("Na jaką pizzę chciałbyś zgłosić zamówienie?\n");
+		  dodatek.zadajPytanie();
+		  parser.przetworzOdpowiedz();
+		  String[] orderKeyWords = parser.getSlowaKluczowe();
+		  Set<String> matched = baza.lookForMatching(orderKeyWords);
+
+		  for (String match: matched) {
+		      System.out.println(match);
+		  }
+
+//		for (String slowo : parser.getSlowaKluczowe()){
+//		    System.out.println("słowo " + slowo);
+//			for (String uriKlasy : baza.dopasujDodatek(slowo)) {
+//			    System.out.println("dopasowano :" + uriKlasy);
+//		        insert(new Fakt("dodatek", uriKlasy));
+//		    }
+//		}
+        update(dodatek);
 end
 
 rule "zakończenie"

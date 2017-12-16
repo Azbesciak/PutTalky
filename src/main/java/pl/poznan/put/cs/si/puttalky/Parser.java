@@ -5,13 +5,11 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.stream.Collectors;
 
 import morfologik.stemming.IStemmer;
 import morfologik.stemming.WordData;
 import morfologik.stemming.polish.PolishStemmer;
-
-/** Author: agalawrynowicz<br>
- * Date: 19-Dec-2016 */
 
 public class Parser {
 	
@@ -58,20 +56,16 @@ public class Parser {
 	
 	public String[] parsuj (String wypowiedz) {
 		String[] slowa = wypowiedz.split("\\s");
-		ArrayList<String> tokeny = new ArrayList<>();
-		
-		PolishStemmer s = new PolishStemmer();
-		
-		for (String slowo : slowa){ 
-			String token;
-			if (stem(s, slowo).length>1)
-				token = stem(s, slowo)[0];
-			else
-				token = slowo.toLowerCase();
-			tokeny.add(token);
-		}
-	    return tokeny.toArray(new String[tokeny.size()]);
+	    return normalize(slowa);
 	}
+
+	public static String[] normalize(String[] toNormalize) {
+        PolishStemmer s = new PolishStemmer();
+
+        return Arrays.stream(toNormalize)
+                .map(w -> stem(s, w).length>1 ? stem(s, w)[0] : w.toLowerCase())
+                .toArray(String[]::new);
+    }
 	
 	public static String[] stem(IStemmer s, String slowo) {
 	    ArrayList<String> result = new ArrayList<>();

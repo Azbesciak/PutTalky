@@ -1,6 +1,5 @@
 package pl.poznan.put.cs.si.puttalky.model;
 
-import pl.poznan.put.cs.si.puttalky.model.Pizza;
 
 import java.util.Set;
 
