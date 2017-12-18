@@ -7,18 +7,22 @@ import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.*;
 import org.semanticweb.owlapi.reasoner.Node;
 import org.semanticweb.owlapi.reasoner.OWLReasoner;
+import pl.poznan.put.cs.si.puttalky.model.Fakt;
 import pl.poznan.put.cs.si.puttalky.model.Pizza;
 
 import java.io.InputStream;
 import java.util.*;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import static java.util.Arrays.*;
-import static java.util.Collections.*;
-import static java.util.stream.Collectors.*;
-import static java.util.stream.Stream.*;
+import static java.util.Arrays.asList;
+import static java.util.Arrays.stream;
+import static java.util.Collections.emptySet;
+import static java.util.stream.Collectors.toSet;
+import static java.util.stream.Stream.concat;
+import static java.util.stream.Stream.of;
 
 
 public class BazaWiedzy {
@@ -45,39 +49,20 @@ public class BazaWiedzy {
         }
     }
 
-    private static class OwlClassContainer {
-        OWLClass clas;
-        Set<String> words;
-        String name;
+    private static String[] splitCamelCase(String camel) {
+        return camel.split("(?<!(^|[A-Z]))(?=[A-Z])|(?<!^)(?=[A-Z][a-z])");
+    }
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            OwlClassContainer that = (OwlClassContainer) o;
-            return Objects.equals(clas, that.clas) &&
-                    Objects.equals(words, that.words) &&
-                    Objects.equals(name, that.name);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(clas, words, name);
-        }
-
-        OwlClassContainer(OWLClass clas, Set<String> words, String name) {
-            this.clas = clas;
-            this.name = name;
-            this.words = words;
-        }
+    private static IRI getIri(String name) {
+        return IRI.create(OWL_ROOT + name);
     }
 
     private OwlClassContainer create(OWLClass clas) {
         String name = parseName(clas);
         Set<String> normalizedNames =
                 name != null
-                    ? new HashSet<>(asList(getNameKeyWords(name)))
-                    : emptySet();
+                        ? new HashSet<>(asList(getNameKeyWords(name)))
+                        : emptySet();
         return new OwlClassContainer(clas, normalizedNames, name);
     }
 
@@ -88,14 +73,6 @@ public class BazaWiedzy {
     private String[] getNameKeyWords(String name) {
         final String[] strings = splitCamelCase(name);
         return Parser.normalize(strings);
-    }
-
-    private static String[] splitCamelCase(String camel) {
-        return camel.split("(?<!(^|[A-Z]))(?=[A-Z])|(?<!^)(?=[A-Z][a-z])");
-    }
-
-    private static IRI getIri(String name) {
-        return IRI.create(OWL_ROOT + name);
     }
 
     public void inicjalizuj() {
@@ -154,11 +131,22 @@ public class BazaWiedzy {
             return emptySet();
         String toMachLower = toMatch.toLowerCase().substring(0, toMatch.length() - 1);
         return classes.stream()
-                .filter(c -> c.toString().toLowerCase()
-                        .substring(0, c.toString().length() - 1)
-                        .contains(toMachLower))
+                .filter(c -> doesContainKeyWord(toMachLower, c))
                 .map(mapper)
+                .sorted(Comparator.comparingInt(a -> a.toString().length()))
+                .limit(1)
                 .collect(toSet());
+    }
+
+    private <C> boolean doesContainKeyWord(String toMachLower, C c) {
+        final String lowerCased = c.toString().toLowerCase();
+        final int indexOfHash = lowerCased.lastIndexOf("#");
+        final int indexOfEnd = lowerCased.lastIndexOf(">");
+
+        final String origin = lowerCased.substring(
+                indexOfHash > 0 ? indexOfHash + 1 : 0,
+                indexOfEnd > 0 ? indexOfEnd : lowerCased.length());
+        return origin.contains(toMachLower);
     }
 
     public Set<String> lookForMatching(String[] keys) {
@@ -189,8 +177,12 @@ public class BazaWiedzy {
                 .filter(c -> !match(c.words, s, x -> x).isEmpty())
                 .collect(toSet());
     }
+
     private BinaryOperator<Set<OwlClassContainer>> toIntersectionOfAll() {
-        return (a,b) -> {a.retainAll(b); return a;};
+        return (a, b) -> {
+            a.retainAll(b);
+            return a;
+        };
     }
 
     private Set<String> getFirstHierarchySubClassesAndThisOne(Set<OwlClassContainer> possibleOptions) {
@@ -203,21 +195,65 @@ public class BazaWiedzy {
                 .collect(toSet());
     }
 
-    public Set<String> wyszukajPizzePoDodatkach(String iri) {
+    public Set<String> wyszukajPizzePoDodatkach(Iterable<?> iris) {
+
+        final OWLDataFactory factory = manager.getOWLDataFactory();
+        OWLObjectProperty maDodatek = factory.getOWLObjectProperty(getIri("maDodatek"));
+        Set<OWLClassExpression> ograniczeniaEgzystencjalne = StreamSupport
+                .stream(iris.spliterator(), false)
+                .map(o -> (o instanceof Fakt) ? ((Fakt) o).getWartosc() : o.toString())
+                .map(IRI::create)
+                .map(factory::getOWLClass)
+                .map(dodatek -> factory.getOWLObjectSomeValuesFrom(maDodatek, dodatek))
+                .collect(Collectors.toSet());
+
+        OWLClassExpression pozadanaPizza = factory.getOWLObjectIntersectionOf(ograniczeniaEgzystencjalne);
+
         Set<String> pizze = new HashSet<>();
-        OWLObjectProperty maDodatek = manager.getOWLDataFactory().getOWLObjectProperty(getIri("maDodatek"));
-        Set<OWLClassExpression> ograniczeniaEgzystencjalne = new HashSet<>();
-
-        OWLClass dodatek = manager.getOWLDataFactory().getOWLClass(IRI.create(iri));
-        OWLClassExpression wyrazenie = manager.getOWLDataFactory().getOWLObjectSomeValuesFrom(maDodatek, dodatek);
-        ograniczeniaEgzystencjalne.add(wyrazenie);
-
-        OWLClassExpression pozadanaPizza = manager.getOWLDataFactory().getOWLObjectIntersectionOf(ograniczeniaEgzystencjalne);
-
         for (org.semanticweb.owlapi.reasoner.Node<OWLClass> klasa : silnik.getSubClasses(pozadanaPizza, false)) {
             pizze.add(klasa.getEntities().iterator().next().asOWLClass().getIRI().getFragment());
         }
 
         return pizze;
+    }
+
+    public Set<String> wyszukajPizzePoDodatkach(String iri) {
+        return wyszukajPizzePoDodatkach(Collections.singleton(iri));
+    }
+
+    private static class OwlClassContainer {
+        OWLClass clas;
+        Set<String> words;
+        String name;
+
+        OwlClassContainer(OWLClass clas, Set<String> words, String name) {
+            this.clas = clas;
+            this.name = name;
+            this.words = words;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            OwlClassContainer that = (OwlClassContainer) o;
+            return Objects.equals(clas, that.clas) &&
+                    Objects.equals(words, that.words) &&
+                    Objects.equals(name, that.name);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(clas, words, name);
+        }
+
+        @Override
+        public String toString() {
+            return "OwlClassContainer{" +
+                    "clas=" + clas +
+                    ", words=" + words +
+                    ", name='" + name + '\'' +
+                    '}';
+        }
     }
 }

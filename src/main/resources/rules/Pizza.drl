@@ -5,6 +5,7 @@ import pl.poznan.put.cs.si.puttalky.BazaWiedzy;
 import java.util.Set
 import java.util.Arrays
 import java.util.stream.Collectors;
+import java.util.HashSet
 
 
 rule "start"
@@ -93,8 +94,12 @@ rule "Polecana pizza"
 		not Fakt(nazwa == "pizza_propozycja")
 		baza: BazaWiedzy()
 		pizza: Pizza()
+		dodatki: HashSet() from collect( Fakt(nazwa == "dodatek"))
 	then
-		Set<String> pizze = baza.wyszukajPizzePoDodatkach(dodatek);
+//	    for (Object f: dodatki) {
+//	        System.out.println(((Fakt)f).getWartosc());
+//	    }
+		Set<String> pizze = baza.wyszukajPizzePoDodatkach(dodatki);
         if (pizze.size()>1){
 			for (String nazwaPizzy : pizze) {
 				insert(new Fakt("pizza_propozycja", nazwaPizzy));
@@ -104,12 +109,12 @@ rule "Polecana pizza"
 		    }
 		}
 		else {
-            Set<String> dodatki = baza.getMatchingExtrasNames(dodatek);
-            if (dodatki.isEmpty()) {
+            Set<String> extras = baza.getMatchingExtrasNames(dodatek);
+            if (extras.isEmpty()) {
                 System.out.println("Nie mamy takiego dodatku");
             } else {
                 System.out.println("Nie mamy pizzy zawierającej `" +
-                    dodatki.iterator().next() +
+                    extras.iterator().next() +
                     "` jednak możemy ją wykonać na specjalne zamówienie"
                 );
             }
