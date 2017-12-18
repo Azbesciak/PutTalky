@@ -52,13 +52,10 @@ rule "Podaj dodatki"
 		  dodatek.setMonit("Jaki dodatek powinna zawierać Twoja pizza?:\n");
 		  dodatek.zadajPytanie();
 		  parser.przetworzOdpowiedz();
-		for (String slowo : parser.getSlowaKluczowe()){
-		    System.out.println("słowo " + slowo);
-			for (String uriKlasy : baza.dopasujDodatek(slowo)) {
-			    System.out.println("dopasowano :" + uriKlasy);
-		        insert(new Fakt("dodatek", uriKlasy));
-		    }
-		}
+		  for (String uri: baza.matchExtras(parser.getSlowaKluczowe())) {
+		      System.out.println("dostałem " + uri);
+		      insert(new Fakt("dodatek", uri));
+		  }
         update(dodatek);
 end
 
@@ -96,9 +93,6 @@ rule "Polecana pizza"
 		pizza: Pizza()
 		dodatki: HashSet() from collect( Fakt(nazwa == "dodatek"))
 	then
-//	    for (Object f: dodatki) {
-//	        System.out.println(((Fakt)f).getWartosc());
-//	    }
 		Set<String> pizze = baza.wyszukajPizzePoDodatkach(dodatki);
         if (pizze.size()>1){
 			for (String nazwaPizzy : pizze) {
@@ -137,7 +131,7 @@ rule "zloz zamowienie"
 		  dodatek.zadajPytanie();
 		  parser.przetworzOdpowiedz();
 		  String[] orderKeyWords = parser.getSlowaKluczowe();
-		  Set<String> matched = baza.lookForMatching(orderKeyWords);
+		  Set<String> matched = baza.lookForPizzas(orderKeyWords);
 
 		  for (String match: matched) {
 		      System.out.println(match);

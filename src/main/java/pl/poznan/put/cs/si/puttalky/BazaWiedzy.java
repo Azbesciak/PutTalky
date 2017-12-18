@@ -92,13 +92,15 @@ public class BazaWiedzy {
                 .collect(toSet());
     }
 
-    public Set<String> dopasujDodatek(String dodatek) {
-        return matchExtras(dodatek, s -> s.clas.getIRI().toString());
+    public Set<String> matchExtras(String[] keyWords) {
+        return getAllMatchingToKeysClasses(keyWords, listaDodatkow)
+                .flatMap(Collection::stream)
+                .map(c -> c.name)
+                .collect(Collectors.toSet());
     }
 
     public Set<String> getMatchingExtrasNames(String extra) {
         return removeOptionals(matchExtras(extra, this::getNameOfClass));
-
     }
 
     private Optional<String> getNameOfClass(OwlClassContainer s) {
@@ -143,22 +145,30 @@ public class BazaWiedzy {
         return origin.contains(toMachLower);
     }
 
-    public Set<String> lookForMatching(String[] keys) {
+    public Set<String> lookForPizzas(String[] keys) {
+        return lookForMatching(keys, listaPizz);
+    }
+
+    public Set<String> lookForMatching(String[] keys, Set<OwlClassContainer> toMatch) {
         final Set<OwlClassContainer> possibleOptions =
-                getPizzasWhichContainsAtLeastPartOfKeyWords(keys, listaPizz);
+                getIntersectionOfClassesSharingKeyWords(keys, toMatch);
         return getFirstHierarchySubClassesAndThisOne(possibleOptions);
     }
 
-    private Set<OwlClassContainer> getPizzasWhichContainsAtLeastPartOfKeyWords(
+    private Set<OwlClassContainer> getIntersectionOfClassesSharingKeyWords(
             String[] keyWords, Set<OwlClassContainer> classes) {
-        return stream(keyWords)
-                .map(s -> lookForMatchingPizzas(classes, s))
-                .filter(s -> !s.isEmpty())
+        return getAllMatchingToKeysClasses(keyWords, classes)
                 .reduce(toIntersectionOfAll())
                 .orElse(emptySet());
     }
 
-    private Set<OwlClassContainer> lookForMatchingPizzas(Set<OwlClassContainer> classes, String s) {
+    private Stream<Set<OwlClassContainer>> getAllMatchingToKeysClasses(String[] keyWords, Set<OwlClassContainer> classes) {
+        return stream(keyWords)
+                .map(s -> lookForMatching(classes, s))
+                .filter(s -> !s.isEmpty());
+    }
+
+    private Set<OwlClassContainer> lookForMatching(Set<OwlClassContainer> classes, String s) {
         return classes.stream()
                 .filter(c -> !match(c.words, s, x -> x).isEmpty())
                 .collect(toSet());
@@ -185,7 +195,7 @@ public class BazaWiedzy {
         final OWLDataFactory factory = manager.getOWLDataFactory();
         OWLObjectProperty maDodatek = factory.getOWLObjectProperty(getIri("maDodatek"));
         Set<OWLClassExpression> ograniczeniaEgzystencjalne = iris.stream().map(Fakt::getWartosc)
-                .map(IRI::create)
+                .map(BazaWiedzy::getIri)
                 .map(factory::getOWLClass)
                 .map(dodatek -> factory.getOWLObjectSomeValuesFrom(maDodatek, dodatek))
                 .collect(Collectors.toSet());
