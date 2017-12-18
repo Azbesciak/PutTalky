@@ -99,6 +99,16 @@ public class BazaWiedzy {
                 .collect(Collectors.toSet());
     }
 
+    public Set<String> lookForPizzas(String[] keys) {
+        return lookForMatching(keys, listaPizz);
+    }
+
+    private Set<String> lookForMatching(String[] keys, Set<OwlClassContainer> toMatch) {
+        final Set<OwlClassContainer> possibleOptions =
+                getIntersectionOfClassesSharingKeyWords(keys, toMatch);
+        return getFirstHierarchySubClassesAndThisOne(possibleOptions);
+    }
+
     public Set<String> getMatchingExtrasNames(String extra) {
         return removeOptionals(matchExtras(extra, this::getNameOfClass));
     }
@@ -145,15 +155,7 @@ public class BazaWiedzy {
         return origin.contains(toMachLower);
     }
 
-    public Set<String> lookForPizzas(String[] keys) {
-        return lookForMatching(keys, listaPizz);
-    }
 
-    public Set<String> lookForMatching(String[] keys, Set<OwlClassContainer> toMatch) {
-        final Set<OwlClassContainer> possibleOptions =
-                getIntersectionOfClassesSharingKeyWords(keys, toMatch);
-        return getFirstHierarchySubClassesAndThisOne(possibleOptions);
-    }
 
     private Set<OwlClassContainer> getIntersectionOfClassesSharingKeyWords(
             String[] keyWords, Set<OwlClassContainer> classes) {
