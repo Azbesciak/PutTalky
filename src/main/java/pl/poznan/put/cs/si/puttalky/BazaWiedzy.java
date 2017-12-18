@@ -15,6 +15,7 @@ import java.util.*;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static java.util.Arrays.asList;
@@ -32,22 +33,9 @@ public class BazaWiedzy {
     private OWLOntologyManager manager = null;
     private OWLOntology ontologia;
     private Set<OWLClass> listaKlas;
-    private Set<OWLClass> listaDodatkow;
+    private Set<OwlClassContainer> listaDodatkow;
 
-    private Set<OWLClass> listaPizz;
-
-    public static void main(String[] args) {
-        BazaWiedzy baza = new BazaWiedzy();
-        baza.inicjalizuj();
-
-        OWLClass mieso = baza.manager.getOWLDataFactory().getOWLClass(getIri("DodatekMięsny"));
-        for (org.semanticweb.owlapi.reasoner.Node<OWLClass> klasa : baza.silnik.getSubClasses(mieso, true)) {
-            System.out.println("klasa:" + klasa.toString());
-        }
-        for (OWLClass d : baza.listaDodatkow) {
-            System.out.println("dodatek: " + d.toString());
-        }
-    }
+    private Set<OwlClassContainer> listaPizz;
 
     private static String[] splitCamelCase(String camel) {
         return camel.split("(?<!(^|[A-Z]))(?=[A-Z])|(?<!^)(?=[A-Z][a-z])");
@@ -94,21 +82,27 @@ public class BazaWiedzy {
         }
     }
 
-    private Set<OWLClass> getSubClasses(String type) {
+    private Set<OwlClassContainer> getSubClasses(String type) {
         final OWLClass classes = manager.getOWLDataFactory().getOWLClass(getIri(type));
         return StreamSupport
                 .stream(silnik.getSubClasses(classes, false).spliterator(), false)
                 .map(Node::getRepresentativeElement)
+                .map(this::create)
+                .filter(p -> !p.words.isEmpty())
                 .collect(toSet());
     }
 
     public Set<String> dopasujDodatek(String dodatek) {
-        return matchExtras(dodatek, s -> s.getIRI().toString());
+        return matchExtras(dodatek, s -> s.clas.getIRI().toString());
     }
 
     public Set<String> getMatchingExtrasNames(String extra) {
         return removeOptionals(matchExtras(extra, this::getNameOfClass));
 
+    }
+
+    private Optional<String> getNameOfClass(OwlClassContainer s) {
+        return getNameOfClass(s.clas);
     }
 
     private Optional<String> getNameOfClass(OWLClass s) {
@@ -122,7 +116,7 @@ public class BazaWiedzy {
                 .collect(toSet());
     }
 
-    private <T> Set<T> matchExtras(String extra, Function<OWLClass, T> mapper) {
+    private <T> Set<T> matchExtras(String extra, Function<OwlClassContainer, T> mapper) {
         return match(listaDodatkow, extra, mapper);
     }
 
@@ -150,17 +144,9 @@ public class BazaWiedzy {
     }
 
     public Set<String> lookForMatching(String[] keys) {
-        final Set<OwlClassContainer> classes = mapClassesToContainers(listaPizz);
         final Set<OwlClassContainer> possibleOptions =
-                getPizzasWhichContainsAtLeastPartOfKeyWords(keys, classes);
+                getPizzasWhichContainsAtLeastPartOfKeyWords(keys, listaPizz);
         return getFirstHierarchySubClassesAndThisOne(possibleOptions);
-    }
-
-    private Set<OwlClassContainer> mapClassesToContainers(Set<OWLClass> classes) {
-        return classes.stream()
-                .map(this::create)
-                .filter(p -> !p.words.isEmpty())
-                .collect(toSet());
     }
 
     private Set<OwlClassContainer> getPizzasWhichContainsAtLeastPartOfKeyWords(
@@ -188,20 +174,17 @@ public class BazaWiedzy {
     private Set<String> getFirstHierarchySubClassesAndThisOne(Set<OwlClassContainer> possibleOptions) {
         return possibleOptions
                 .stream()
-                .flatMap(s -> concat(getSubClasses(s.name).stream(), of(s.clas)))
-                .map(this::create)
+                .flatMap(s -> concat(getSubClasses(s.name).stream(), of(s)))
                 .map(s -> s.name)
                 .filter(Pizza::isPizza)
                 .collect(toSet());
     }
 
-    public Set<String> wyszukajPizzePoDodatkach(Iterable<?> iris) {
+    public Set<String> wyszukajPizzePoDodatkach(Set<Fakt> iris) {
 
         final OWLDataFactory factory = manager.getOWLDataFactory();
         OWLObjectProperty maDodatek = factory.getOWLObjectProperty(getIri("maDodatek"));
-        Set<OWLClassExpression> ograniczeniaEgzystencjalne = StreamSupport
-                .stream(iris.spliterator(), false)
-                .map(o -> (o instanceof Fakt) ? ((Fakt) o).getWartosc() : o.toString())
+        Set<OWLClassExpression> ograniczeniaEgzystencjalne = iris.stream().map(Fakt::getWartosc)
                 .map(IRI::create)
                 .map(factory::getOWLClass)
                 .map(dodatek -> factory.getOWLObjectSomeValuesFrom(maDodatek, dodatek))
@@ -215,10 +198,6 @@ public class BazaWiedzy {
         }
 
         return pizze;
-    }
-
-    public Set<String> wyszukajPizzePoDodatkach(String iri) {
-        return wyszukajPizzePoDodatkach(Collections.singleton(iri));
     }
 
     private static class OwlClassContainer {
