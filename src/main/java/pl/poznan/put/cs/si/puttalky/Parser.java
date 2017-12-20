@@ -53,20 +53,7 @@ public class Parser {
 		setSlowaKluczowe(parsuj(buffer));
 	}
 
-	public class SentenceDelimer{
-	    String[] with;
-	    String[] without;
-
-        SentenceDelimer(String sentence) {
-            final String[] divided = wypowiedz.split("\\s*bez\\s*");
-            this.with = parsuj(divided[0]);
-            final String without = Arrays.stream(divided).skip(1)
-                    .reduce((a, b) -> String.join(" ", a, b)).orElse("");
-            this.without = parsuj(without);
-        }
-    }
-	
-	public String[] parsuj (String wypowiedz) {
+	public String[] parsuj(String wypowiedz) {
 		String[] slowa = wypowiedz.split("\\s");
 	    return normalize(slowa);
 	}

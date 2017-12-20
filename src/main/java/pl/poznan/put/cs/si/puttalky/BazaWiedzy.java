@@ -247,4 +247,23 @@ public class BazaWiedzy {
                     '}';
         }
     }
+
+    public static void main(String[] args) {
+        final Sentence ala_bez_kota = new Sentence("ser szynka bez mięsa");
+        System.out.println(ala_bez_kota );
+
+        final BazaWiedzy bazaWiedzy = new BazaWiedzy();
+        bazaWiedzy.inicjalizuj();
+        final Set<String> with = bazaWiedzy.matchExtras(ala_bez_kota.with);
+        final Set<String> without = bazaWiedzy.matchExtras(ala_bez_kota.without);
+        System.out.println("Z");
+        with.forEach(System.out::println);
+        System.out.println();
+        System.out.println("bez");
+        without.forEach(System.out::println);
+        with.removeAll(without);
+        System.out.println();
+        System.out.println(with);
+
+    }
 }
