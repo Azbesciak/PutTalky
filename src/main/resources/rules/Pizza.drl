@@ -40,6 +40,11 @@ rule "Podaj dodatki lub zloz zamowienie"
 		      insert(new Fakt("zlecenie", nazwa));
 		  }
 
+		  for (String nazwa: baza.lookForPizzas(sentence.getWithout())) {
+          		      System.out.println("bez pizzy: " + nazwa);
+          		      insert(new Fakt("bezPizzy", nazwa));
+          		  }
+
 		  for (String uri: baza.matchExtras(sentence.getWith())) {
 		      System.out.println("dodatek: " + uri);
 		      insert(new Fakt("dodatek", uri));
@@ -53,7 +58,7 @@ end
 
 rule "Podaj rodzaj ciasta"
 	salience 2
-	
+
 	when
 		not Fakt(nazwa == "rodzaj_ciasta")
 		ciasto : Ciasto()
@@ -75,19 +80,20 @@ end
 
 rule "Polecana pizza"
 	salience 1
-	
+
 	when
-		Fakt(nazwa == "dodatek" || nazwa == "bezDodatku" || nazwa == "zlecenie", dodatek: wartosc)
-		Fakt(nazwa == "rodzaj_ciasta", ciasto: wartosc)
+		Fakt(nazwa == "dodatek" || nazwa == "bezDodatku" || nazwa == "zlecenie" || nazwa == "bezPizzy")
 		not Fakt(nazwa == "pizza_propozycja")
+		Fakt(nazwa == "rodzaj_ciasta")
 		baza: BazaWiedzy()
 		pizza: Pizza()
 		dodatki: HashSet() from collect( Fakt(nazwa == "dodatek"))
 		bezDodatku: HashSet() from collect( Fakt(nazwa == "bezDodatku"))
 		zlecenie: HashSet() from collect( Fakt(nazwa == "zlecenie"))
+		bezPizz: HashSet() from collect( Fakt(nazwa == "bezPizzy"))
 	then
-		Set<String> pizze = baza.lookForPizzasByExtras(dodatki, bezDodatku, zlecenie);
-        if (pizze.size()>1) {
+		Set<String> pizze = baza.lookForPizzasByExtras(dodatki, bezDodatku, zlecenie, bezPizz);
+        if (!pizze.isEmpty()) {
 			for (String nazwaPizzy : pizze) {
 				insert(new Fakt("pizza_propozycja", nazwaPizzy));
 		    	if (Pizza.isPizza(nazwaPizzy)){
@@ -96,15 +102,11 @@ rule "Polecana pizza"
 		    }
 		}
 		else {
-            Set<String> extras = baza.getMatchingExtrasNames(dodatek);
-            if (extras.isEmpty()) {
-                System.out.println("Nie mamy takiego dodatku");
-            } else {
-                System.out.println("Nie mamy pizzy zawierającej `" +
-                    extras.iterator().next() +
-                    "` jednak możemy ją wykonać na specjalne zamówienie"
-                );
-            }
+            System.out.println("Nie mamy w ofercie pizzy złożonej z " + dodatki.stream().map(s -> ((Fakt)s).getWartosc()).collect(Collectors.toList()));
+            dodatki.forEach(d -> retract(d));
+            bezDodatku.forEach(d -> retract(d));
+            zlecenie.forEach(d -> retract(d));
+            bezPizz.forEach(d -> retract(d));
 	    }
 
 end

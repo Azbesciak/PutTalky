@@ -7,9 +7,7 @@ import pl.poznan.put.cs.si.puttalky.model.*;
 
 public class PuttalkyMain {
 
-	public static int liczba=0;
-	
-    public static final void main(String[] args) {
+    public static void main(String[] args) {
         try {
         	// load up the knowledge base
 	        KieServices ks = KieServices.Factory.get();
@@ -25,7 +23,7 @@ public class PuttalkyMain {
 
             Parser parser = new Parser();
             BazaWiedzy baza = new BazaWiedzy();
-            baza.inicjalizuj();
+            baza.init();
             
             Fakt fakt = new Fakt();
             fakt.setNazwa("");
