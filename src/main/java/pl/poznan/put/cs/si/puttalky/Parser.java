@@ -3,18 +3,16 @@ package pl.poznan.put.cs.si.puttalky;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import morfologik.stemming.IStemmer;
-import morfologik.stemming.WordData;
 import morfologik.stemming.polish.PolishStemmer;
 
 public class Parser {
 	
 	private String wypowiedz;
-	private String[] slowaKluczowe;
+	private Sentence sentence;
 	
 	
 	public Parser(){}
@@ -32,12 +30,12 @@ public class Parser {
 		this.wypowiedz = wypowiedz;
 	}
 
-	public String[] getSlowaKluczowe() {
-		return slowaKluczowe;
+	public Sentence getSentence() {
+		return sentence;
 	}
 
-	public void setSlowaKluczowe(String[] slowaKluczowe) {
-		this.slowaKluczowe = slowaKluczowe;
+	public void setSentence(Sentence sentence) {
+		this.sentence = sentence;
 	}
 
 	public void przetworzOdpowiedz()
@@ -50,7 +48,7 @@ public class Parser {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		setSlowaKluczowe(parsuj(buffer));
+		setSentence(new Sentence(buffer));
 	}
 
 	public String[] parsuj(String wypowiedz) {
@@ -60,19 +58,16 @@ public class Parser {
 
 	public static String[] normalize(String[] toNormalize) {
         PolishStemmer s = new PolishStemmer();
-
         return Arrays.stream(toNormalize)
                 .map(w -> stem(s, w).length>1 ? stem(s, w)[0] : w.toLowerCase())
                 .toArray(String[]::new);
     }
 	
 	public static String[] stem(IStemmer s, String slowo) {
-	    ArrayList<String> result = new ArrayList<>();
-	    for (WordData wd : s.lookup(slowo)) {
-	      result.add(wd.getStem().toString());
-	      result.add(wd.getTag().toString());
-	    }
-	    return result.toArray(new String[result.size()]);
+	    return s.lookup(slowo).stream()
+                .flatMap(wd -> Stream.of(wd.getStem(), wd.getTag()))
+                .map(CharSequence::toString)
+                .toArray(String[]::new);
 	  }
 	
     public static void main(String[] args) {

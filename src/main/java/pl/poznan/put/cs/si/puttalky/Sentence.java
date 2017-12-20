@@ -1,19 +1,29 @@
 package pl.poznan.put.cs.si.puttalky;
 
 import java.util.Arrays;
+import java.util.List;
 
 public class Sentence {
-	    String[] with;
-	    String[] without;
+    private final String[] with;
+    private final String[] without;
 
-        Sentence(String sentence) {
-            final Parser parser = new Parser();
-            final String[] divided = sentence.split("\\s+bez\\s+");
-            this.with = parser.parsuj(divided[0]);
-            final String without = Arrays.stream(divided).skip(1)
-                    .reduce((a, b) -> String.join(" ", a, b)).orElse("");
-            this.without = parser.parsuj(without);
-        }
+    Sentence(String sentence) {
+        final Parser parser = new Parser();
+        final List<String> divided = Arrays.asList(sentence.split("\\s+bez\\s+"));
+        final boolean isJustWithout = sentence.indexOf("bez") == 0;
+        with = isJustWithout ? new String[0] : parser.parsuj(divided.get(0));
+        final String without = divided.stream().skip(isJustWithout ? 0 : 1)
+                .reduce((a, b) -> String.join(" ", a, b)).orElse("");
+        this.without = parser.parsuj(without);
+    }
+
+    public String[] getWith() {
+        return with;
+    }
+
+    public String[] getWithout() {
+        return without;
+    }
 
     @Override
     public String toString() {

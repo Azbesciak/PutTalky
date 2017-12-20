@@ -34,7 +34,7 @@ rule "zamowienie czy porada"
         wybor.setMonit("Czy chciałbyś zamówić pizzę, czy potrzebujesz porady?");
         wybor.zadajPytanie();
         parser.przetworzOdpowiedz();
-        String res = wybor.parseAnswer(parser.getSlowaKluczowe());
+        String res = wybor.parseAnswer(parser.getSentence().getWith());
 
         insert(new Fakt("wybor", res));
     end
@@ -43,7 +43,7 @@ rule "Podaj dodatki"
 	salience 2
 	
 	when
-		not Fakt(nazwa == "dodatek")
+		not Fakt(nazwa == "dodatek" || nazwa == "bezDodatku")
 		Fakt(nazwa == "wybor", wartosc == Wybor.PORADA)
 		dodatek : Dodatek()
 		parser : Parser()
@@ -52,11 +52,16 @@ rule "Podaj dodatki"
 		  dodatek.setMonit("Jaki dodatek powinna zawierać Twoja pizza?:\n");
 		  dodatek.zadajPytanie();
 		  parser.przetworzOdpowiedz();
-		  for (String uri: baza.matchExtras(parser.getSlowaKluczowe())) {
-		      System.out.println("dostałem " + uri);
+		  Sentence sentence = parser.getSentence();
+		  for (String uri: baza.matchExtras(sentence.getWith())) {
+		      System.out.println("dostałem: " + uri);
 		      insert(new Fakt("dodatek", uri));
 		  }
-        update(dodatek);
+		  for (String uri: baza.matchExtras(sentence.getWithout())) {
+              System.out.println("dostałem bez dodatku: " + uri);
+              insert(new Fakt("bezDodatku", uri));
+          }
+          update(dodatek);
 end
 
 rule "Podaj rodzaj ciasta"
@@ -72,7 +77,7 @@ rule "Podaj rodzaj ciasta"
 		  ciasto.zadajPytanie();
 		  parser.przetworzOdpowiedz();
 
-		for (String slowo : parser.getSlowaKluczowe()){
+		for (String slowo : parser.getSentence().getWith()){
 			if (slowo.matches("cienk[ei]")){
 		        insert(new Fakt("rodzaj_ciasta", "cienkie"));
 			} else if (slowo.matches("grub[ye]")) {
@@ -86,15 +91,16 @@ rule "Polecana pizza"
 	salience 1
 	
 	when
-		Fakt(nazwa == "dodatek", dodatek: wartosc)
+		Fakt(nazwa == "dodatek" || nazwa == "bezDodatku", dodatek: wartosc)
 		Fakt(nazwa == "rodzaj_ciasta", ciasto: wartosc)
 		not Fakt(nazwa == "pizza_propozycja")
 		baza: BazaWiedzy()
 		pizza: Pizza()
 		dodatki: HashSet() from collect( Fakt(nazwa == "dodatek"))
+		bezDodatku: HashSet() from collect( Fakt(nazwa == "bezDodatku"))
 	then
-		Set<String> pizze = baza.wyszukajPizzePoDodatkach(dodatki);
-        if (pizze.size()>1){
+		Set<String> pizze = baza.lookForPizzasByExtras(dodatki, bezDodatku);
+        if (pizze.size()>1) {
 			for (String nazwaPizzy : pizze) {
 				insert(new Fakt("pizza_propozycja", nazwaPizzy));
 		    	if (Pizza.isPizza(nazwaPizzy)){
@@ -130,14 +136,14 @@ rule "zloz zamowienie"
 		  dodatek.setMonit("Na jaką pizzę chciałbyś zgłosić zamówienie?\n");
 		  dodatek.zadajPytanie();
 		  parser.przetworzOdpowiedz();
-		  String[] orderKeyWords = parser.getSlowaKluczowe();
+		  String[] orderKeyWords = parser.getSentence().getWith();
 		  Set<String> matched = baza.lookForPizzas(orderKeyWords);
 
 		  for (String match: matched) {
 		      System.out.println(match);
 		  }
 
-//		for (String slowo : parser.getSlowaKluczowe()){
+//		for (String slowo : parser.getSentence()){
 //		    System.out.println("słowo " + slowo);
 //			for (String uriKlasy : baza.dopasujDodatek(slowo)) {
 //			    System.out.println("dopasowano :" + uriKlasy);
