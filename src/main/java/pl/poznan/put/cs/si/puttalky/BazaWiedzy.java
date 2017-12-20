@@ -208,19 +208,21 @@ public class BazaWiedzy {
                 .collect(toSet());
     }
 
-    public Set<String> lookForPizzasByExtras(Set<Fakt> with, Set<Fakt> without) {
-        final Set<String> ok = wyszukajPizzePoDodatkach(with);
+    public Set<String> lookForPizzasByExtras(Set<Fakt> with, Set<Fakt> without, Set<Fakt> fromOrder) {
+        final Set<String> ok = wyszukajPizzePoDodatkach(with, fromOrder.isEmpty());
+        final Set<String> orderPizzas = fromOrder.stream().map(Fakt::getWartosc).collect(Collectors.toSet());
+        ok.addAll(orderPizzas);
         if (!without.isEmpty()) {
-            final Set<String> notOk = wyszukajPizzePoDodatkach(without);
+            final Set<String> notOk = wyszukajPizzePoDodatkach(without, false);
             ok.removeAll(notOk);
         }
         return ok;
     }
 
-    public Set<String> wyszukajPizzePoDodatkach(Set<Fakt> dodatki) {
+    public Set<String> wyszukajPizzePoDodatkach(Set<Fakt> dodatki, boolean allIfEmpty) {
 
         final OWLDataFactory factory = manager.getOWLDataFactory();
-        if (dodatki.isEmpty()) {
+        if (dodatki.isEmpty() && allIfEmpty) {
             return listaPizz.stream().map(s -> s.name).collect(Collectors.toSet());
         }
         OWLObjectProperty maDodatek = factory.getOWLObjectProperty(getIri("maDodatek"));
