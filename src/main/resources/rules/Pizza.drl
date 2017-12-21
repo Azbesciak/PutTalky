@@ -25,7 +25,8 @@ rule "Podaj dodatki lub zloz zamowienie"
 	salience 2
 	
 	when
-		not Fakt(nazwa == "dodatek" || nazwa == "bezDodatku" || nazwa == "zlecenie")
+		not Fakt(nazwa == "dodatek" || nazwa == "bezDodatku" ||
+		         nazwa == "zlecenie" || nazwa == "bezPizzy")
 		dodatek : Dodatek()
 		parser : Parser()
 		baza : BazaWiedzy()
@@ -82,7 +83,8 @@ rule "Polecana pizza"
 	salience 1
 
 	when
-		Fakt(nazwa == "dodatek" || nazwa == "bezDodatku" || nazwa == "zlecenie" || nazwa == "bezPizzy")
+		Fakt(nazwa == "dodatek" || nazwa == "bezDodatku" ||
+		     nazwa == "zlecenie" || nazwa == "bezPizzy")
 		not Fakt(nazwa == "pizza_propozycja")
 		Fakt(nazwa == "rodzaj_ciasta")
 		baza: BazaWiedzy()
