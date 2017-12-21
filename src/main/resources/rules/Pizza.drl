@@ -31,26 +31,17 @@ rule "Podaj dodatki lub zloz zamowienie"
 		parser : Parser()
 		baza : BazaWiedzy()
 	then
-		  dodatek.setMonit("Na jaką pizzę masz ochotę?:\n");
-		  dodatek.zadajPytanie();
-		  parser.przetworzOdpowiedz();
-		  Sentence sentence = parser.getSentence();
+        dodatek.setMonit("Na jaką pizzę masz ochotę?:\n");
+        dodatek.zadajPytanie();
+        parser.przetworzOdpowiedz();
+        Sentence sentence = parser.getSentence();
 
-		  for (String nazwa: baza.lookForPizzas(sentence.getWith())) {
-		      insert(new Fakt("zlecenie", nazwa));
-		  }
+        baza.lookForPizzas(sentence.getWith()).forEach(n -> insert(new Fakt("zlecenie", n)));
+        baza.lookForPizzas(sentence.getWithout()).forEach(n -> insert(new Fakt("bezPizzy", n)));
+		baza.matchExtras(sentence.getWith()).forEach(n -> insert(new Fakt("dodatek", n)));
+		baza.matchExtras(sentence.getWithout()).forEach(n -> insert(new Fakt("bezDodatku", n)));
 
-		  for (String nazwa: baza.lookForPizzas(sentence.getWithout())) {
-              insert(new Fakt("bezPizzy", nazwa));
-          }
-
-		  for (String uri: baza.matchExtras(sentence.getWith())) {
-		      insert(new Fakt("dodatek", uri));
-		  }
-		  for (String uri: baza.matchExtras(sentence.getWithout())) {
-              insert(new Fakt("bezDodatku", uri));
-          }
-          update(dodatek);
+        update(dodatek);
 end
 
 rule "Podaj rodzaj ciasta"
