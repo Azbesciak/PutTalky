@@ -9,7 +9,7 @@ public class Sentence {
 
     Sentence(String sentence) {
         final Parser parser = new Parser();
-        sentence = sentence.replaceAll(",", " ");
+        sentence = sentence.replaceAll("[,.;|'`\"]", " ");
         final List<String> divided = Arrays.asList(sentence.split("\\s+bez\\s+"));
         final boolean isJustWithout = sentence.indexOf("bez") == 0;
         with = isJustWithout ? new String[0] : parser.parsuj(divided.get(0));
