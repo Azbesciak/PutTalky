@@ -45,7 +45,6 @@ public class Parser {
 		try {
 			buffer = in.readLine();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		setSentence(new Sentence(buffer));
