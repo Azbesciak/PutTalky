@@ -37,21 +37,17 @@ rule "Podaj dodatki lub zloz zamowienie"
 		  Sentence sentence = parser.getSentence();
 
 		  for (String nazwa: baza.lookForPizzas(sentence.getWith())) {
-		      System.out.println("zlecenie na: " + nazwa);
 		      insert(new Fakt("zlecenie", nazwa));
 		  }
 
 		  for (String nazwa: baza.lookForPizzas(sentence.getWithout())) {
-          		      System.out.println("bez pizzy: " + nazwa);
-          		      insert(new Fakt("bezPizzy", nazwa));
-          		  }
+              insert(new Fakt("bezPizzy", nazwa));
+          }
 
 		  for (String uri: baza.matchExtras(sentence.getWith())) {
-		      System.out.println("dodatek: " + uri);
 		      insert(new Fakt("dodatek", uri));
 		  }
 		  for (String uri: baza.matchExtras(sentence.getWithout())) {
-              System.out.println("bez dodatku: " + uri);
               insert(new Fakt("bezDodatku", uri));
           }
           update(dodatek);

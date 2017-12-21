@@ -31,11 +31,12 @@ public class BazaWiedzy {
 
     private static final String OWL_ROOT = "http://semantic.cs.put.poznan.pl/ontologie/pizza.owl#";
     OWLReasoner silnik;
-    private OWLOntologyManager manager = null;
+    private OWLOntologyManager manager;
     private OWLOntology ontologia;
     private Set<OwlClassContainer> extras;
-
     private Set<OwlClassContainer> pizzas;
+    private Set<String> namedPizzas;
+    private OWLDataFactory factory;
 
     private static String[] splitCamelCase(String camel) {
         return camel.split("(?<!(^|[A-Z]))(?=[A-Z])|(?<!^)(?=[A-Z][a-z])");
@@ -66,12 +67,13 @@ public class BazaWiedzy {
     public void init() {
         InputStream knowledgeSource = this.getClass().getResourceAsStream("/pizza.owl");
         manager = OWLManager.createOWLOntologyManager();
-
+        factory = manager.getOWLDataFactory();
         try {
             ontologia = manager.loadOntologyFromOntologyDocument(knowledgeSource);
             silnik = new Reasoner.ReasonerFactory().createReasoner(ontologia);
             extras = getSubClasses("Dodatek");
             pizzas = getSubClasses("Pizza");
+            namedPizzas = getSubClasses("NazwanaPizza").stream().map(s -> s.name).collect(toSet());
             printMenuFor(pizzas, "pizze");
             printMenuFor(extras, "dodatki");
         } catch (OWLOntologyCreationException e) {
@@ -198,6 +200,7 @@ public class BazaWiedzy {
         }
         final Set<String> noPizzaOrders = mapFactsToStrings(withoutPizzas);
         ok.removeAll(noPizzaOrders);
+        ok.retainAll(namedPizzas);
         return ok;
     }
 
@@ -206,7 +209,6 @@ public class BazaWiedzy {
     }
 
     public Set<String> lookForPizzasByExtras(Set<Fakt> extras, boolean allIfEmpty) {
-        final OWLDataFactory factory = manager.getOWLDataFactory();
         if (extras.isEmpty() && allIfEmpty) {
             return pizzas.stream().map(s -> s.name).collect(Collectors.toSet());
         }
